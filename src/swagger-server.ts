@@ -55,4 +55,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const port = parseInt(process.env.SWAGGER_PORT || '3003', 10);
   startSwaggerServer(port);
 }
-# Swagger UI Implementation
