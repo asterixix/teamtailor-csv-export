@@ -1,7 +1,5 @@
 # Teamtailor CSV Export
 
-A high-performance Node.js application for exporting candidate data from Teamtailor as CSV files. Built with Express, TypeScript, and streaming for memory-efficient large dataset handling.
-
 ## AI Disclaimer
 
 Built using Claude Sonnet 4.5 for base API planning, KAT Coder Pro V1 for development and testing, GLM 5 for quick fixes, and MCP Servers (Context7, Perplexity, Z.AI, GitHub, WebSearch, Fetch, Morph) for documentation research and analysis. All models run in OpenCode with OhMyOpenCode and custom agents for Planning, Coding, and Debugging.
