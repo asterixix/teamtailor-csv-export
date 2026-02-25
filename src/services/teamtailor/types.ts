@@ -122,10 +122,19 @@ export type JobApplicationResource = JsonApiResource<
  * Flattened representation of candidate and job application data
  */
 export interface CsvRow {
-  candidate_id: string | number;
+  candidate_id: string;
   first_name: string;
   last_name: string;
   email: string;
-  job_application_id: string | number;
+  job_application_id: string;
   job_application_created_at: string;
 }
+
+export const CSV_HEADERS: (keyof CsvRow)[] = [
+  'candidate_id',
+  'first_name',
+  'last_name',
+  'email',
+  'job_application_id',
+  'job_application_created_at',
+];

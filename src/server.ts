@@ -13,8 +13,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createApp() {
   const app = express();
 
-  // Request logging with Morgan
-  app.use(morgan('dev'));
+  // Request logging with Morgan (disabled in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(morgan('dev'));
+  }
 
   // Middleware: Parse JSON request bodies
   app.use(express.json());

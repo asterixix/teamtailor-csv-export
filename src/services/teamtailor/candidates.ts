@@ -8,6 +8,7 @@ import type {
 } from './types.js';
 import { teamtailorFetchByUrl } from './client.js';
 import { config } from '../../config.js';
+import logger from '../../shared/logger.js';
 
 /**
  * Fetches all candidates with their job applications efficiently
@@ -18,25 +19,28 @@ import { config } from '../../config.js';
  */
 export async function* streamCandidateCsvRows(): AsyncGenerator<CsvRow[]> {
   let nextUrl: string | null | undefined = buildInitialUrl();
+  let totalPages = 0;
+  let totalCandidates = 0;
 
   while (nextUrl) {
     const response: JsonApiResponse<CandidateResource> =
       await teamtailorFetchByUrl<JsonApiResponse<CandidateResource>>(nextUrl);
 
-    // Build lookup map from included job applications
     const appLookupMap = buildJobApplicationsLookup(response.included);
 
-    // Convert candidates to CSV rows
     const rows: CsvRow[] = response.data
       .map((candidate: CandidateResource) => candidateToRows(candidate, appLookupMap))
       .flat();
 
-    // Yield the rows for this page
+    totalPages += 1;
+    totalCandidates += response.data.length;
+
     yield rows;
 
-    // Follow the next link
     nextUrl = response.links?.next;
   }
+
+  logger.info(`Export completed: ${totalCandidates} candidates across ${totalPages} pages`);
 }
 
 /**
@@ -73,7 +77,13 @@ function buildJobApplicationsLookup(
 
   for (const resource of included) {
     if (resource.type === 'job-applications') {
-      map.set(String(resource.id), resource as unknown as JsonApiResource<JobApplicationAttributes, JobApplicationRelationships>);
+      map.set(
+        String(resource.id),
+        resource as unknown as JsonApiResource<
+          JobApplicationAttributes,
+          JobApplicationRelationships
+        >
+      );
     }
   }
 
@@ -93,27 +103,25 @@ function candidateToRows(
   if (jobAppsRelationship && 'data' in jobAppsRelationship) {
     const jobAppData = jobAppsRelationship.data;
     if (Array.isArray(jobAppData) && jobAppData.length > 0) {
-      // Create one row per job application
       return jobAppData
         .filter(item => item.type === 'job-applications')
         .map(item => {
           const jobApp = jobAppMap.get(String(item.id));
           return {
-            candidate_id: candidate.id,
+            candidate_id: String(candidate.id),
             first_name: candidate.attributes['first-name'],
             last_name: candidate.attributes['last-name'],
             email: candidate.attributes.email,
-            job_application_id: jobApp ? jobApp.id : '',
+            job_application_id: jobApp ? String(jobApp.id) : '',
             job_application_created_at: jobApp ? jobApp.attributes['created-at'] : '',
           };
         });
     }
   }
 
-  // Candidate with no applications: emit one row with empty app fields
   return [
     {
-      candidate_id: candidate.id,
+      candidate_id: String(candidate.id),
       first_name: candidate.attributes['first-name'],
       last_name: candidate.attributes['last-name'],
       email: candidate.attributes.email,
