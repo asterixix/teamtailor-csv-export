@@ -1,7 +1,5 @@
 # Teamtailor CSV Export
 
-A high-performance Node.js application for exporting candidate data from Teamtailor as CSV files. Built with Express, TypeScript, and streaming for memory-efficient large dataset handling.
-
 ## Features
 
 - **Stream-based CSV export**: Efficiently handles large datasets without buffering in memory
@@ -50,6 +48,7 @@ Configure the application using environment variables in your `.env` file:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port number |
+| `SWAGGER_PORT` | `3003` | Swagger UI port number |
 | `TEAMTAILOR_API_KEY` | Required | Your Teamtailor API authentication key |
 | `TEAMTAILOR_BASE_URL` | `https://api.teamtailor.com` | Teamtailor API base URL |
 | `TEAMTAILOR_API_VERSION` | `v1` | Teamtailor API version |
@@ -181,6 +180,10 @@ npm run lint
 
 ### Format Code
 Apply Prettier formatting:
+```bash
+npm run format
+```
+
 ### Run Both Servers
 Start both API and Swagger UI servers:
 ```bash
@@ -283,10 +286,6 @@ The application includes comprehensive API documentation using Swagger UI:
 - **OpenAPI 3.0**: Full specification with request/response schemas
 - **Authentication**: Documents required API key authentication
 
-### Accessing Documentation
-- **Swagger UI**: http://localhost:3003/api-docs
-- **OpenAPI Spec**: http://localhost:3002/api-docs.json
-
 ### Documented Endpoints
 - **GET /health**: Health check endpoint
 - **GET /api/export/candidates**: CSV export endpoint
@@ -335,16 +334,12 @@ GET /api/export/candidates 200 - - ms - -
 
 ## Error Handling
 
-The application includes comprehensive error handling:
-
 - **API Errors**: Teamtailor API failures return 502 with error details
 - **Stream Errors**: Stream failures are caught and return 500
 - **Config Errors**: Missing environment variables fail at startup
 - **Validation**: TypeScript strict mode catches type errors at build time
 
 ## Code Quality
-
-The project maintains high code quality standards:
 
 ### ESLint Configuration
 - **TypeScript rules**: Comprehensive TypeScript-specific linting rules
@@ -356,22 +351,6 @@ The project maintains high code quality standards:
 - **Consistent style**: Automatic code formatting
 - **TypeScript support**: Proper handling of TypeScript syntax
 - **Configurable rules**: Customizable formatting options
-
-### Quality Scripts
-```bash
-# Run all quality checks
-npm run lint          # ESLint checking
-npm run format        # Prettier formatting
-npm run format:check  # Verify formatting
-npm run build         # TypeScript compilation
-npm test             # Test suite execution
-```
-
-### Swagger Integration
-- **OpenAPI 3.0**: Complete API specification
-- **Auto-generated docs**: JSDoc comments generate documentation
-- **Interactive testing**: Test endpoints directly in Swagger UI
-- **Validation**: OpenAPI spec validates request/response formats
 
 ## Security
 
