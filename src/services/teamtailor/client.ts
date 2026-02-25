@@ -70,31 +70,46 @@ export async function teamtailorFetch<T>(
  * @returns Parsed response data
  * @throws TeamtailorApiError if response is not ok
  */
-export async function teamtailorFetchByUrl<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: buildHeaders(),
-  });
+const FETCH_TIMEOUT_MS = 30_000;
 
-  if (!response.ok) {
-    // Read the response body once as text first
-    const errorText = await response.text();
-    let errorBody: unknown;
-    try {
-      // Try to parse as JSON
-      errorBody = JSON.parse(errorText);
-    } catch {
-      // If JSON parsing fails, use the raw text
-      errorBody = errorText;
+export async function teamtailorFetchByUrl<T>(url: string): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: buildHeaders(),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorBody: unknown;
+      try {
+        errorBody = JSON.parse(errorText);
+      } catch {
+        errorBody = errorText;
+      }
+
+      throw new TeamtailorApiError(
+        `Teamtailor API request failed: ${response.statusText}`,
+        response.status,
+        errorBody
+      );
     }
 
-    throw new TeamtailorApiError(
-      `Teamtailor API request failed: ${response.statusText}`,
-      response.status,
-      errorBody
-    );
+    return response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new TeamtailorApiError(
+        `Teamtailor API request timed out after ${FETCH_TIMEOUT_MS}ms`,
+        408,
+        { timeout: FETCH_TIMEOUT_MS }
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  // Read the response body once for successful responses
-  return response.json() as Promise<T>;
 }

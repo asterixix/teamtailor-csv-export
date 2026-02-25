@@ -1,7 +1,9 @@
 import type {
   JsonApiResponse,
+  JsonApiResource,
   CandidateResource,
-  JobApplicationResource,
+  JobApplicationAttributes,
+  JobApplicationRelationships,
   CsvRow,
 } from './types.js';
 import { teamtailorFetchByUrl } from './client.js';
@@ -41,14 +43,16 @@ export async function* streamCandidateCsvRows(): AsyncGenerator<CsvRow[]> {
  * Builds the initial API URL with sparse fieldsets and pagination
  */
 function buildInitialUrl(): string {
-  const fields = [
-    'fields[candidates]=first-name,last-name,email,job-applications',
-    'fields[job-applications]=created-at',
-    `page[size]=${config.teamtailor.pageSize}`,
-    'include=job-applications',
-  ].join('&');
+  const url = new URL(`${config.teamtailor.baseUrl}/candidates`);
+  const params = new URLSearchParams();
 
-  return `${config.teamtailor.baseUrl}/candidates?${fields}`;
+  params.append('fields[candidates]', 'first-name,last-name,email,job-applications');
+  params.append('fields[job-applications]', 'created-at');
+  params.append('page[size]', String(config.teamtailor.pageSize));
+  params.append('include', 'job-applications');
+
+  url.search = params.toString();
+  return url.toString();
 }
 
 /**
@@ -57,8 +61,11 @@ function buildInitialUrl(): string {
  */
 function buildJobApplicationsLookup(
   included: JsonApiResponse['included'] | undefined
-): Map<string, JobApplicationResource> {
-  const map = new Map<string, JobApplicationResource>();
+): Map<string, JsonApiResource<JobApplicationAttributes, JobApplicationRelationships>> {
+  const map = new Map<
+    string,
+    JsonApiResource<JobApplicationAttributes, JobApplicationRelationships>
+  >();
 
   if (!included) {
     return map;
@@ -66,8 +73,7 @@ function buildJobApplicationsLookup(
 
   for (const resource of included) {
     if (resource.type === 'job-applications') {
-      const jobApp = resource as unknown as JobApplicationResource;
-      map.set(String(jobApp.id), jobApp);
+      map.set(String(resource.id), resource as unknown as JsonApiResource<JobApplicationAttributes, JobApplicationRelationships>);
     }
   }
 
@@ -80,7 +86,7 @@ function buildJobApplicationsLookup(
  */
 function candidateToRows(
   candidate: CandidateResource,
-  jobAppMap: Map<string, JobApplicationResource>
+  jobAppMap: Map<string, JsonApiResource<JobApplicationAttributes, JobApplicationRelationships>>
 ): CsvRow[] {
   const jobAppsRelationship = candidate.relationships?.['job-applications'];
 

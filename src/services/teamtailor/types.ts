@@ -28,6 +28,10 @@ export interface JsonApiRelationship {
 export interface JsonApiLinks {
   self?: string;
   related?: string;
+  next?: string;
+  prev?: string;
+  first?: string;
+  last?: string;
   [key: string]: string | undefined;
 }
 

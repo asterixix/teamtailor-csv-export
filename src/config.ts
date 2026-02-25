@@ -22,7 +22,7 @@ export const config = {
   teamtailor: {
     apiKey: requireEnv('TEAMTAILOR_API_KEY'),
     baseUrl: process.env.TEAMTAILOR_BASE_URL || 'https://api.teamtailor.com/v1',
-    apiVersion: process.env.TEAMTAILOR_API_VERSION || 'v1',
-    pageSize: parseInt(process.env.TEAMTAILOR_PAGE_SIZE || '100', 10),
+    apiVersion: process.env.TEAMTAILOR_API_VERSION || '20240404',
+    pageSize: parseInt(process.env.TEAMTAILOR_PAGE_SIZE || '30', 10),
   },
 } as const;

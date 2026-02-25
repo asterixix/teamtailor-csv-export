@@ -1,124 +1,194 @@
-import { describe, it, expect, vi } from 'vitest';
-import type { Response } from 'express';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import supertest from 'supertest';
+import { createApp } from '../server.js';
+import * as candidatesModule from '../services/teamtailor/candidates.js';
+import { TeamtailorApiError } from '../services/teamtailor/client.js';
+
+vi.mock('../services/teamtailor/candidates.js');
+
+const mockStreamCandidateCsvRows = vi.mocked(candidatesModule.streamCandidateCsvRows);
 
 describe('Export Routes - Integration Tests', () => {
-  describe('Route handler error handling', () => {
-    it('should handle when headers are already sent', async () => {
-      const mockRes: Partial<Response> = {
-        headersSent: true,
-        setHeader: vi.fn(),
-        status: vi.fn(() => mockRes as Response),
-        json: vi.fn(),
-      };
+  let app: ReturnType<typeof createApp>;
 
-      expect(mockRes.headersSent).toBe(true);
-      expect(vi.mocked(mockRes.json)).not.toHaveBeenCalled();
-    });
+  beforeEach(() => {
+    app = createApp();
+    vi.clearAllMocks();
+  });
 
-    it('should set correct CSV headers', () => {
-      const headers = new Map<string, string>();
-      const setHeader = (key: string, value: string) => headers.set(key, value);
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
 
-      setHeader('Content-Type', 'text/csv');
-      setHeader('Content-Disposition', 'attachment; filename="candidates-2024-01-15.csv"');
-      setHeader('Transfer-Encoding', 'chunked');
+  describe('GET /health', () => {
+    it('should return 200 with ok status and timestamp', async () => {
+      const res = await supertest(app).get('/health');
 
-      expect(headers.get('Content-Type')).toBe('text/csv');
-      expect(headers.get('Content-Disposition')).toMatch(/^attachment; filename="/);
-      expect(headers.get('Transfer-Encoding')).toBe('chunked');
-    });
-
-    it('should generate correct filename format with date', () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const filename = `candidates-${today}.csv`;
-
-      expect(filename).toMatch(/^candidates-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/json/);
+      expect(res.body).toHaveProperty('status', 'ok');
+      expect(res.body).toHaveProperty('timestamp');
+      expect(new Date(res.body.timestamp).toISOString()).toBe(res.body.timestamp);
     });
   });
 
-  describe('Error handling', () => {
-    it('should return 502 status for TeamtailorApiError', () => {
-      const statusCode = 502;
-      const errorResponse = {
-        error: 'Bad Gateway',
-        message: 'API request failed',
-        status: 500,
-      };
+  describe('GET /api-docs.json', () => {
+    it('should return 200 with OpenAPI specification', async () => {
+      const res = await supertest(app).get('/api-docs.json');
 
-      expect(statusCode).toBe(502);
-      expect(errorResponse.error).toBe('Bad Gateway');
-    });
-
-    it('should return 500 status for generic errors', () => {
-      const statusCode = 500;
-      const errorResponse = {
-        error: 'Internal Server Error',
-        message: 'Unexpected error',
-      };
-
-      expect(statusCode).toBe(500);
-      expect(errorResponse.error).toBe('Internal Server Error');
-    });
-
-    it('should not send response body if headers already sent', () => {
-      const headersSent = true;
-      const shouldSendResponse = !headersSent;
-
-      expect(shouldSendResponse).toBe(false);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/json/);
+      expect(res.body).toHaveProperty('openapi', '3.0.0');
+      expect(res.body).toHaveProperty('info');
+      expect(res.body.info).toHaveProperty('title', 'Teamtailor CSV Export API');
     });
   });
 
-  describe('Health check endpoint', () => {
-    it('should return ok status', () => {
-      const response = { status: 'ok', timestamp: new Date().toISOString() };
+  describe('GET /api/export/candidates', () => {
+    it('should return 200 with text/csv content-type', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [
+          {
+            candidate_id: '123',
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'john@example.com',
+            job_application_id: '456',
+            job_application_created_at: '2024-01-15T10:00:00Z',
+          },
+        ];
+      });
 
-      expect(response).toHaveProperty('status', 'ok');
-      expect(response).toHaveProperty('timestamp');
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
     });
 
-    it('should return ISO timestamp', () => {
-      const timestamp = new Date().toISOString();
+    it('should set Content-Disposition header with attachment filename', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [];
+      });
 
-      expect(timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\./);
-    });
-  });
+      const res = await supertest(app).get('/api/export/candidates');
 
-  describe('CSV export error cases', () => {
-    it('should identify TeamtailorApiError by instance check', () => {
-      class TeamtailorApiError extends Error {
-        constructor(public status: number) {
-          super('API error');
-        }
-      }
-
-      const error = new TeamtailorApiError(500);
-
-      expect(error instanceof TeamtailorApiError).toBe(true);
-      expect(error.status).toBe(500);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toMatch(
+        /^attachment; filename="candidates-\d{4}-\d{2}-\d{2}\.csv"$/
+      );
     });
 
-    it('should return correct HTTP status for API errors', () => {
-      const apiErrorStatus = 500;
-      const httpResponseStatus = 502;
+    it('should include CSV headers in response', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [
+          {
+            candidate_id: '123',
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'john@example.com',
+            job_application_id: '456',
+            job_application_created_at: '2024-01-15T10:00:00Z',
+          },
+        ];
+      });
 
-      expect(apiErrorStatus).toBe(500);
-      expect(httpResponseStatus).toBe(502);
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.status).toBe(200);
+      const csvLines = res.text.split('\n');
+      expect(csvLines[0]).toBe(
+        'candidate_id,first_name,last_name,email,job_application_id,job_application_created_at'
+      );
     });
 
-    it('should include error details in response', () => {
-      const error = {
-        message: 'API request failed',
-        status: 500,
-      };
+    it('should return CSV data rows', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [
+          {
+            candidate_id: '123',
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'john@example.com',
+            job_application_id: '456',
+            job_application_created_at: '2024-01-15T10:00:00Z',
+          },
+        ];
+      });
 
-      const response = {
-        error: 'Bad Gateway',
-        message: error.message,
-        status: error.status,
-      };
+      const res = await supertest(app).get('/api/export/candidates');
 
-      expect(response.message).toBe('API request failed');
-      expect(response.status).toBe(500);
+      expect(res.status).toBe(200);
+      const csvLines = res.text.split('\n');
+      expect(csvLines[1]).toContain('123');
+      expect(csvLines[1]).toContain('John');
+      expect(csvLines[1]).toContain('Doe');
+      expect(csvLines[1]).toContain('john@example.com');
+    });
+
+    it('should handle multiple pages of data', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [
+          {
+            candidate_id: '1',
+            first_name: 'A',
+            last_name: 'B',
+            email: 'a@b.com',
+            job_application_id: '',
+            job_application_created_at: '',
+          },
+        ];
+        yield [
+          {
+            candidate_id: '2',
+            first_name: 'C',
+            last_name: 'D',
+            email: 'c@d.com',
+            job_application_id: '',
+            job_application_created_at: '',
+          },
+        ];
+      });
+
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.status).toBe(200);
+      const csvLines = res.text.split('\n').filter(line => line.trim());
+      expect(csvLines.length).toBe(3); // header + 2 data rows
+    });
+
+    it('should return 502 when TeamtailorApiError is thrown', async () => {
+      // eslint-disable-next-line require-yield
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        throw new TeamtailorApiError('API request failed', 404, { error: 'Not found' });
+      });
+
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.status).toBe(502);
+      expect(res.body).toHaveProperty('error', 'Bad Gateway');
+      expect(res.body).toHaveProperty('message');
+    });
+
+    it('should return 500 for generic errors', async () => {
+      // eslint-disable-next-line require-yield
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        throw new Error('Unexpected error');
+      });
+
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Internal Server Error');
+    });
+
+    it('should set Cache-Control to no-cache', async () => {
+      mockStreamCandidateCsvRows.mockImplementation(async function* () {
+        yield [];
+      });
+
+      const res = await supertest(app).get('/api/export/candidates');
+
+      expect(res.headers['cache-control']).toBe('no-cache');
     });
   });
 });
