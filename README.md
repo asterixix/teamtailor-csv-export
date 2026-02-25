@@ -1,7 +1,8 @@
 # Teamtailor CSV Export
 
 ## AI Disclaimer
-In building process used Claude Sonnet 4.5 to plan base API configuration and implementation, KAT Coder Pro V1 in code development, testing and preparation to publish, GLM 5 for quick fixes and simple commits and MCP Servers like Context7, Perplexity Ask, Z.AI tools, GitHub, WebSearch, Fetch, Morph etc. to support in checking documentations, search information, analyze approaches, quick edits. All models runned in OpenCode configured with OhMyOpenCode and self configured agents for Planning, Coding and Debugging.
+In building process used Claude Sonnet 4.5 to plan base API configuration and implementation (also for iterate analysis to research gaps, missings and issues), KAT Coder Pro V1 in code development, testing and preparation to publish, GLM 5 for quick fixes and simple commits and MCP Servers like Context7, Perplexity Ask, Z.AI tools, GitHub, WebSearch, Fetch, Morph etc. to support in checking documentations, search information, analyze approaches, quick edits. All models runned in OpenCode configured with OhMyOpenCode and self configured agents for Planning, Coding and Debugging.
+Maybe in future will use Vibe Kanban for better AI agentic workflows and commit history, but not yet implemented in daily stack :(
 
 ## Features
 
@@ -20,6 +21,7 @@ In building process used Claude Sonnet 4.5 to plan base API configuration and im
 - **Node.js**: 20.0.0 or higher
 - **npm**: 10.0.0 or higher (included with Node.js)
 - **Teamtailor API Key**: From your Teamtailor account (required for data access)
+- **Cats or Dogs**: They are so much important mental support in backend coding.
 
 ## Installation
 
