@@ -1,7 +1,7 @@
 # Teamtailor CSV Export
 
 ## AI Disclaimer
-In building process used Claude Sonnet 4.5 to plan base API configuration and implementation, KAT Coder Pro V1 in code development, testing and preparation to publish, GLM 5 for quick fixes and simple commits and MCP Servers like Context7, Perplexity Ask, Z.AI tools, GitHub, WebSearch, Fetch, Morph etc. to support in checking documentations, search information, analyze approaches, quick edits.
+In building process used Claude Sonnet 4.5 to plan base API configuration and implementation, KAT Coder Pro V1 in code development, testing and preparation to publish, GLM 5 for quick fixes and simple commits and MCP Servers like Context7, Perplexity Ask, Z.AI tools, GitHub, WebSearch, Fetch, Morph etc. to support in checking documentations, search information, analyze approaches, quick edits. All models runned in OpenCode configured with OhMyOpenCode and self configured agents for Planning, Coding and Debugging.
 
 ## Features
 
