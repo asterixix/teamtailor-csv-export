@@ -52,28 +52,26 @@ function buildInitialUrl(): string {
 }
 
 /**
- * Builds a lookup map of job applications by candidate ID
- * Maps candidateId -> array of job applications for that candidate
+ * Builds a lookup map of job applications by their ID
+ * Returns a map from job application ID to job application resource
  */
 function buildJobApplicationsLookup(
   included: JsonApiResponse['included'] | undefined
-): Map<string | number, JobApplicationResource[]> {
-  const map = new Map<string | number, JobApplicationResource[]>();
+): Map<string, JobApplicationResource> {
+  const map = new Map<string, JobApplicationResource>();
 
   if (!included) {
     return map;
   }
 
-  // Build a map of job applications by their ID
-  const jobAppMap = new Map<string, JobApplicationResource>();
   for (const resource of included) {
     if (resource.type === 'job-applications') {
       const jobApp = resource as unknown as JobApplicationResource;
-      jobAppMap.set(jobApp.id, jobApp);
+      map.set(String(jobApp.id), jobApp);
     }
   }
 
-  return jobAppMap;
+  return map;
 }
 
 /**
@@ -93,7 +91,7 @@ function candidateToRows(
       return jobAppData
         .filter(item => item.type === 'job-applications')
         .map(item => {
-          const jobApp = jobAppMap.get(item.id);
+          const jobApp = jobAppMap.get(String(item.id));
           return {
             candidate_id: candidate.id,
             first_name: candidate.attributes['first-name'],

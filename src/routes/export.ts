@@ -28,6 +28,7 @@ const CSV_HEADERS: (keyof CsvRow)[] = [
  * @returns {object} 502 - Teamtailor API error
  * @returns {object} 500 - Internal server error
  * @produces text/csv
+ * @security teamtailorApiKey
  */
 exportRouter.get('/candidates', async (_req, res) => {
   const filename = `candidates-${new Date().toISOString().slice(0, 10)}.csv`;
